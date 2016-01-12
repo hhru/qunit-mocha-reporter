@@ -4,13 +4,13 @@
  * https://github.com/xnimorz/qunit-mocha-reporter
  *
  */
-/* global QUnit */
+/* global QUnit, define, module, exports */
 (function() {
     'use strict';
 
-    var tests, currentTest;
-
-    QUnit.jsonReporter = function(){};
+    var tests;
+    var currentTest;
+    var callback;
 
     QUnit.begin(function() {
         tests = {
@@ -33,7 +33,7 @@
     QUnit.testStart(function(data) {
         currentTest = {
             title: data.name,
-            fullTitle: '[' + data.module + ']: ' + data.name,
+            fullTitle: (data.module ? '[' + data.module + ']: ' : '')+ data.name,
             duration: 0,
             startTime: new Date()
         };
@@ -62,7 +62,25 @@
         tests.stats.passes = data.passed;
         tests.stats.failures = data.failed;
 
-        QUnit.jsonReporter(tests);
+        callback(tests);
     });
+
+    function defineCallback(testsDoneCallback) {
+        callback = testsDoneCallback;
+    }
+
+    (function(defineCallback) {
+        if (typeof exports === 'object') {
+            // CommonJS
+            // CommonJS должен стоять первым, чтобы инициализация по возможности - была синхронной
+            module.exports = defineCallback;
+        } else if (typeof define === 'function' && define.amd) {
+            // AMD.
+            define(defineCallback);
+        } else {
+            // Global scope
+            window.qUnitDefineCallback = defineCallback;
+        }
+    })(defineCallback);
 
 })();
